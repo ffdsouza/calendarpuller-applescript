@@ -1,0 +1,142 @@
+# GitHub Actions Virtual Environments
+# https://github.com/actions/virtual-environments/
+
+# A template workflow intended for Apple Platform libraries
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/ci.yml'
+      - 'Sources/**/*.*'
+      - 'Tests/**/*.*'
+      - 'Example/**/*.*'
+  pull_request:
+    branches:
+      - main
+
+env:
+  PROJECT: PROJECT.xcodeproj
+  SCHEME: PROJECT
+
+  EXAMPLE_PROJECT: Example/ExampleApp.xcodeproj
+  EXAMPLE_SCHEME: ExampleApp
+
+  DEVELOPER_DIR: /Applications/Xcode_13.2.1.app/Contents/Developer
+
+  IOS_DEST: "platform=iOS Simulator,name=iPhone 13 Mini,OS=latest"
+  TVOS_DEST: "platform=tvOS Simulator,name=Apple TV,OS=latest"
+  WATCHOS_DEST: "platform=watchOS Simulator,name=Apple Watch Series 7 - 41mm,OS=latest"
+  MACOS_DEST: "platform=macOS,arch=x86_64"
+
+jobs:
+  env-details:
+    name: Environment details
+    runs-on: macOS-11
+    steps:
+      - name: xcode version
+        run: xcodebuild -version -sdk
+
+      - name: list simulators
+        run: |
+          xcrun simctl delete unavailable
+          xcrun simctl list
+
+  test-iOS:
+    name: iOS unit tests
+    runs-on: macOS-11
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+
+      - name: unit tests
+        run: |
+          set -o pipefail
+          xcodebuild clean test \
+              -project "$PROJECT" \
+              -scheme "$SCHEME" \
+              -destination "$IOS_DEST" \
+              CODE_SIGN_IDENTITY="-" | xcpretty -c
+
+  test-tvOS:
+    name: tvOS unit tests
+    runs-on: macOS-11
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+
+      - name: unit tests
+        run: |
+          set -o pipefail
+          xcodebuild clean test \
+              -project "$PROJECT" \
+              -scheme "$SCHEME" \
+              -destination "$TVOS_DEST" \
+              CODE_SIGN_IDENTITY="-" | xcpretty -c
+
+  test-watchOS:
+    name: watchOS unit tests
+    runs-on: macOS-11
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+
+      - name: unit tests
+        run: |
+          set -o pipefail
+          xcodebuild clean test \
+              -project "$PROJECT" \
+              -scheme "$SCHEME" \
+              -destination "$WATCHOS_DEST" \
+              CODE_SIGN_IDENTITY="-" | xcpretty -c
+
+  test-macOS:
+    name: macOS unit tests
+    runs-on: macOS-11
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+
+      - name: unit tests
+        run: |
+          set -o pipefail
+          xcodebuild clean test \
+              -project "$PROJECT" \
+              -scheme "$SCHEME" \
+              -destination "$MACOS_DEST" \
+              CODE_SIGN_IDENTITY="-" | xcpretty -c
+
+  ui-test-iOS:
+    name: iOS UI tests
+    runs-on: macOS-11
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+
+      - name: ui tests
+        run: |
+          set -o pipefail
+          xcodebuild clean test \
+              -project "$EXAMPLE_PROJECT" \
+              -scheme "$EXAMPLE_SCHEME" \
+              -destination "$IOS_DEST" \
+              CODE_SIGN_IDENTITY="-" | xcpretty -c
+
+  ui-test-macOS:
+    name: macOS UI test
+    runs-on: macOS-11
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+
+      - name: ui tests
+        run: |
+          set -o pipefail
+          xcodebuild clean test \
+              -project "$EXAMPLE_PROJECT" \
+              -scheme "$EXAMPLE_SCHEME" \
+              -destination "$MACOS_DEST" \
+              CODE_SIGN_IDENTITY="-" | xcpretty -c

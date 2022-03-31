@@ -1,0 +1,54 @@
+# GitHub Actions Virtual Environments
+# https://github.com/actions/virtual-environments/
+
+name: SwiftPM Integration
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/spm-ios.yml'
+      - 'Package*'
+      - 'Sources/**/*.*'
+      - 'Tests/**/*.*'
+  pull_request:
+    branches:
+      - main
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_13.2.1.app/Contents/Developer
+
+  IOS_DEST: "platform=iOS Simulator,name=iPhone 13 Mini,OS=latest"
+
+  SCHEME: PROJECT
+
+jobs:
+  main:
+    name: SwiftPM Build
+    runs-on: macOS-11
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+
+      - name: xcode version
+        run: xcodebuild -version -sdk
+
+      - name: list simulators
+        run: |
+          xcrun simctl delete unavailable
+          xcrun simctl list
+
+      # Only if needed. If repo contains an Xcode project, delete it.
+      - name: delete xcodeproj
+        run: rm -rf PROJECT.xcodeproj
+
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild build -scheme "$SCHEME" -destination "$IOS_DEST" | xcpretty -c
+
+      - name: Test
+        run: |
+          set -o pipefail
+          xcodebuild test -scheme "$SCHEME" -destination "$IOS_DEST" | xcpretty -c

@@ -1,0 +1,40 @@
+# GitHub Actions Virtual Environments
+# https://github.com/actions/virtual-environments/
+
+name: Danger
+
+on:
+  pull_request:
+    types: [synchronize, opened, reopened, labeled, unlabeled, edited]
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_13.2.1.app/Contents/Developer
+
+jobs:
+  main:
+    name: Review, Lint, Verify
+    runs-on: macOS-11
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+
+      - name: ruby versions
+        run: |
+          ruby --version
+          gem --version
+          bundler --version
+
+      # https://github.com/ruby/setup-ruby
+      - name: ruby setup
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+          bundler-cache: true
+
+      - name: jazzy docs
+        run: bundle exec jazzy --output docs/
+
+      - name: danger
+        env:
+          DANGER_GITHUB_API_TOKEN: ${{ secrets.DANGER_GITHUB_API_TOKEN }}
+        run: bundle exec danger --verbose
